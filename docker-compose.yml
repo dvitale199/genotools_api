@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  genotools_api:
+    image: genotools_api:0.0.1
+    ports:
+      - "8000:8000"
+    volumes:
+      - ${HOME}/.genotools/ref:/app/data
+      - ${PWD}:/app
