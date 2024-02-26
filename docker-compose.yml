@@ -1,10 +1,14 @@
-version: '3.8'
+version: '0.0.1'
 
 services:
-  genotools_api:
-    image: genotools_api:0.0.1
+  genotools_api_test_it:
+    image: genotools_api
+    container_name: genotools_api_test_it
+    build: .
+    mem_limit: 8g   
+    volumes:
+      - /Users/vitaled2/Desktop/Projects/genotools_api:/app
+      - /Users/vitaled2/Desktop/Projects/genotools_api/test_data:/app/data
+      - /Users/vitaled2/.genotools/ref:/app/ref
     ports:
       - "8000:8000"
-    volumes:
-      - ${HOME}/.genotools/ref:/app/data
-      - ${PWD}:/app

@@ -1,18 +1,8 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
-from fastapi.responses import FileResponse
-import os
-import shutil
-from tempfile import TemporaryDirectory
-# from google.cloud import batch_v1
+from fastapi import FastAPI, HTTPException, Body
+from pydantic import BaseModel
 from genotools.utils import shell_do
-import json
-import re
 import logging
 
-from pydantic import BaseModel, Field
-from typing import Optional, Dict, List
-
-# batch_client = batch_v1.BatchServiceClient()
 app = FastAPI()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -21,56 +11,111 @@ logger = logging.getLogger(__name__)
 async def read_root():
     return {"message": "Welcome to GenoTools"}
 
+class GenoToolsArgs(BaseModel):
+    bfile: str = None
+    pfile: str = None
+    vcf: str = None
+    out: str = None
+    full_output: bool = None
+    skip_fails: bool = None
+    warn: bool = None
+    callrate: float = None
+    sex: bool = None
+    related: bool = None
+    related_cutoff: float = None
+    duplicated_cutoff: float = None
+    prune_related: bool = None
+    prune_duplicated: bool = None
+    het: bool = None
+    all_sample: bool = None
 
-class GenotoolsInput(BaseModel):
-    geno_path: str
-    out_path: str
-    ref_path: str
-    ref_labels_path: str
-    model_file_path: str
+@app.post("/run-genotools")
+async def run_genotools(args: GenoToolsArgs = Body(...)):
+    command_builder = GenoToolsCommandBuilder()
+    # Convert the Pydantic model to a dictionary, excluding undefined fields
+    args_dict = args.model_dump(exclude_none=True)
+    
+    # Validate and execute the command
+    response = command_builder.execute_command(**args_dict)
+    
+    if response["success"]:
+        logger.info("Command executed successfully.")
+        return {"success": True, "result": response["result"]}
+    else:
+        logger.error(f"Command execution failed: {response['message']}")
+        raise HTTPException(status_code=400, detail=response["message"])
+    
 
+class GenoToolsCommandBuilder:
 
-@app.post("/run-genotools/") #, response_model=dict)
-async def run_genotools(input_data: GenotoolsInput):
-    geno_path = input_data.geno_path
-    out_path = input_data.out_path
-    ref_path = input_data.ref_path
-    ref_labels_path = input_data.ref_labels_path
-    model_path = input_data.model_file_path
-
-    file_extensions = ['.pgen', '.pvar', '.psam']
-    file_paths = {ext: f"{geno_path}{ext}" for ext in file_extensions}
-
-    # Check if all files exist - add more checks later
-    for ext, path in file_paths.items():
-        if not os.path.isfile(path):
-            raise HTTPException(status_code=404, detail=f"File not found: {path}")
+    allowed_args = [
+        'bfile', 'pfile', 'vcf', 'out', 'full_output', 'skip_fails', 'warn',
+        'callrate', 'sex', 'related', 'related_cutoff', 'duplicated_cutoff',
+        'prune_related', 'prune_duplicated', 'het', 'all_sample'
+    ]
         
-    output = run_genotools_command(geno_path, out_path, ref_path, ref_labels_path, model_path)
-    # parsed_output = parse_log(output)
-    # response = ResponseData(**parsed_output)
-    # print(response.model_dump_json(indent=4))
+    def __init__(self):
+        self.base_command = "genotools"
 
-    return output
+    def build_command(self, **kwargs):
+        """
+        Builds a command line string for GenoTools from given keyword arguments.
+        All arguments are optional, and only those provided will be included in the command.
+        
+        :param kwargs: Key-value pairs of command line arguments and their values.
+                       Arguments are optional. For flags without explicit values, use a boolean True.
+                       If an argument is not provided, it will not be included in the command.
+        :return: A string representing the command line to execute.
+        """
+        args = []
+        for key, value in kwargs.items():
+            if key.startswith('_'):
+                continue  # Skip internal or private arguments
 
-def run_genotools_command(filename_prefix, out_path, ref_path, ref_labels_path, model_path):
-    command = (
-        f"genotools --pfile {filename_prefix} "
-        f"--out {out_path} "
-        f"--ancestry "
+            arg_name = f"--{key.replace('_', '-')}"  # Convert underscores to hyphens for CLI
+            
+            if isinstance(value, bool):
+                if value:  # Only add flag if True
+                    args.append(arg_name)
+            else:
+                args.append(f"{arg_name} {value}")
+        return f"{self.base_command} {' '.join(args)}"
+    
+    def validate_input(self, **kwargs):
+        """
+        Validates the input arguments against the allowed list.
+        Returns (True, "") if all arguments are valid, or (False, "error message") otherwise.
+        """
+        for key in kwargs.keys():
+            if key not in self.allowed_args:
+                return False, f"Invalid argument: {key}"
+        return True, ""
+    
 
-        f"--ref_panel {ref_path} "
-        f"--ref_labels {ref_labels_path} "
-        f"--all_sample "
-        f"--all_variant "
-        f"--model {model_path}"
-    )
+    def execute_command(self, **kwargs):
+        """
+        Validates the input arguments, builds the command line string,
+        and executes the command using the shell_do function from genotools.utils.
 
-    # process = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    process = shell_do(command, log=True, return_log=True)
-    # parsed_log = parse_log(process)
-    # logger.info(json.dumps(parsed_log, indent=4))
-    return process
+        :param kwargs: Key-value pairs of command line arguments and their values.
+        :return: The output of the shell_do function, typically the execution status and command output.
+        """
+        # Validate input arguments first
+        valid, message = self.validate_input(**kwargs)
+        if not valid:
+            return {"success": False, "message": message}
+
+        # Build the command
+        command = self.build_command(**kwargs)
+        
+        # Execute the command
+        try:
+            result = shell_do(command, log=True, return_log=True)
+            return {"success": True, "result": result}
+
+        except Exception as e:
+            logger.error(f"Error executing command: {e}")
+            return {"success": False, "message": str(e)}
 
 
 if __name__ == "__main__":
