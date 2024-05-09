@@ -1,4 +1,0 @@
-steps:
-- name: 'gcr.io/cloud-builders/docker'
-  args: ['build', '-t', 'gcr.io/genotools/genotools_api', '.']
-images: ['gcr.io/genotools/genotools_api']

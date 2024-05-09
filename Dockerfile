@@ -9,7 +9,6 @@ WORKDIR /app
 COPY . /app
 
 RUN pip install --upgrade pip && \
-    # pip install --no-cache-dir -r requirements.txt && \
     pip install the_real_genotools && \
     pip install uvicorn && \
     pip install fastapi && \
