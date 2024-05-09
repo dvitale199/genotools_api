@@ -12,10 +12,9 @@ def test_read_main():
 def test_run_genotools():
     # Define the payload for the POST request
     payload = {
+        "pfile": "pfile",
+        "out": "out",
         "callrate": 0.5,
-        "sex": True,
-        "het": False,
-        "maf": 0.1
     }
 
     # Send POST request to the endpoint
@@ -27,19 +26,22 @@ def test_run_genotools():
     # Check the response content
     assert response.json() == {
         "message": "Job submitted",
-        "command": "genotools --callrate 0.5 --sex --maf 0.1"
+        "command": "genotools --pfile pfile --out out --callrate 0.5"
     }
 
 
-test_read_main()
-test_run_genotools()
+# test_read_main()
+# test_run_genotools()
 
 payload = {
-        "callrate": 0.5,
-        "sex": True,
-        "het": False,
-        "maf": 0.1
-    }
-
+    "pfile": "~/Desktop/Projects/genotools_api/data/test_data/genotools_test",
+    "out": "~/Desktop/Projects/genotools_api/data/test_data/CALLRATE_TEST",
+    "callrate": 0.5,
+}
+# payload = {
+#     "pfile": "pfile",
+#     "out": "out",
+#     "callrate": 0.5,
+# }
 # Send POST request to the endpoint
 response = client.post("/run-genotools/", json=payload)

@@ -1,6 +1,8 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
+from genotools.utils import shell_do
+import os
 
 router = APIRouter()
 
@@ -27,6 +29,8 @@ class GenoToolsParams(BaseModel):
 
 @router.post("/run-genotools/")
 def run_genotools(params: GenoToolsParams):
+    params.pfile = expand_path(params.pfile) if params.pfile else None
+    params.out = expand_path(params.out) if params.out else None
     command = "genotools"
     if params.callrate is not None:
         command += f" --callrate {params.callrate}"
@@ -39,11 +43,11 @@ def run_genotools(params: GenoToolsParams):
     
     if params.pfile:
         geno_path = params.pfile
-        file_argstring = f" --pgen {geno_path}"
+        file_argstring = f" --pfile {geno_path}"
         command += file_argstring
     elif params.bfile:
         geno_path = params.bfile
-        file_argstring = f" --bgen {geno_path}"
+        file_argstring = f" --bfile {geno_path}"
         command += file_argstring
     elif params.vcf:
         geno_path = params.vcf
@@ -57,16 +61,40 @@ def run_genotools(params: GenoToolsParams):
     else:
         return {"message": "No output file provided"}
 
-
-    command += f" --pgen {params.pfile} --out {params.out}"
-
-
-
     # placeholder for handle calling kubernetes to run this command in a job
+    execute_genotools(command, run_locally=True)
+    print(command)
+    return {
+        "message": "Job submitted", 
+        "command": command
+        # "result:": result
+        }
+
+
+def execute_genotools(command: str, run_locally: bool = True):
+    """
+    Executes the genotools command.
     
-    return {"message": "Job submitted", "command": command}
+    Args:
+    - command (str): The command to execute.
+    - run_locally (bool): If True, the command is executed locally using shell_do.
+      If False, the command is prepared for execution in a GKE cluster (method to be implemented).
+    
+    Returns:
+    - dict: A dictionary with either the output of the command or an error message.
+    """
+    if run_locally:
+        return shell_do(command, log=True, return_log=True)
+        # shell_do(command)
+    else:
+        # Placeholder for GKE cluster execution method
+        return {"message": "GKE execution method to be implemented"}
 
 
-def create_payload(**kwargs):
-    # Create a dictionary only with the parameters provided
-    return {key: value for key, value in kwargs.items() if value is not None}
+def expand_path(path: str) -> str:
+    """Expand the user path."""
+    return os.path.expanduser(path)
+
+# def create_payload(**kwargs):
+#     # Create a dictionary only with the parameters provided
+#     return {key: value for key, value in kwargs.items() if value is not None}
