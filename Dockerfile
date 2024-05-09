@@ -1,5 +1,5 @@
 # Base image with essential dependencies
-FROM python:3.9
+FROM python:3.11
 
 # Set working directory
 WORKDIR /app
@@ -17,10 +17,7 @@ RUN pip install --upgrade pip && \
 # Expose port for Streamlit
 # EXPOSE 8080
 # Expose port for FastAPI
-EXPOSE 8000
+EXPOSE 8080
 
 # run fastapi app
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-
-# Start Streamlit app
-# ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8080", "--server.address=0.0.0.0"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
