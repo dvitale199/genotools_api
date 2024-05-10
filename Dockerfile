@@ -1,19 +1,26 @@
-# Base image with essential dependencies
-FROM python:3.11
+FROM python:3.11.3
+LABEL maintainer="Dan Vitale <dan@datatecnica.com>"
 
-# Set working directory
 WORKDIR /app
 
-# Install dependencies
-COPY requirements.txt /app/
+RUN apt-get update && apt-get install -y \
+    git \
+    && rm -rf /var/lib/apt/lists/* # clean up to reduce image size
+
+RUN git clone https://github.com/dvitale199/genotools_api.git
+
+WORKDIR /app/genotools_api
+
 RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install uvicorn==0.29.0 fastapi==0.111.0 && \
+    pip install .
 
-# Copy the rest of the application
-COPY . /app
+# RUN adduser --disabled-password --gecos "" gtuser && \
+#     chown -R gtuser:gtuser /app
 
-# Expose the port FastAPI will run on
+# USER gtuser
+# ENV PATH="/home/gtuser/.local/bin:${PATH}"
 EXPOSE 8080
 
-# Command to run the FastAPI application using uvicorn
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD python -m uvicorn app.main:app --host 0.0.0.0 --port 8080

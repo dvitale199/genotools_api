@@ -1,8 +1,5 @@
 fastapi==0.111.0
-genotools==0.0.0
 pydantic==2.7.1
-setuptools==69.0.3
 setuptools==69.5.1
-the_real_genotools==1.0.1
 the_real_genotools==1.2.2
 uvicorn==0.29.0
