@@ -1,3 +1,7 @@
+# make reqs
+pipreqs . --force --ignore .env,.vscode,app/routers/.pytest_cache,app/.pytest_cache,__pycache__,notebooks/*,old/*,.venv
+
+
 # build image
 docker build -t genotools_api .
 

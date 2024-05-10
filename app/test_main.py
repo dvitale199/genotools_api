@@ -38,10 +38,5 @@ payload = {
     "out": "~/Desktop/Projects/genotools_api/data/test_data/CALLRATE_TEST",
     "callrate": 0.5,
 }
-# payload = {
-#     "pfile": "pfile",
-#     "out": "out",
-#     "callrate": 0.5,
-# }
-# Send POST request to the endpoint
+
 response = client.post("/run-genotools/", json=payload)

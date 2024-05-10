@@ -1,26 +1,26 @@
-# Base image with essential dependencies
-FROM python:3.9
+FROM python:3.11.3
+LABEL maintainer="Dan Vitale <dan@datatecnica.com>"
 
-# Set working directory
 WORKDIR /app
 
-# Copy requirements and project files
-# COPY requirements.txt /app
-COPY . /app
+RUN apt-get update && apt-get install -y \
+    git \
+    && rm -rf /var/lib/apt/lists/* # clean up to reduce image size
+
+RUN git clone https://github.com/dvitale199/genotools_api.git
+
+WORKDIR /app/genotools_api
 
 RUN pip install --upgrade pip && \
-    pip install the_real_genotools && \
-    pip install uvicorn && \
-    pip install fastapi && \
-    pip install google-cloud-batch
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install uvicorn==0.29.0 fastapi==0.111.0 && \
+    pip install .
 
-# Expose port for Streamlit
-# EXPOSE 8080
-# Expose port for FastAPI
-EXPOSE 8000
+# RUN adduser --disabled-password --gecos "" gtuser && \
+#     chown -R gtuser:gtuser /app
 
-# run fastapi app
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# USER gtuser
+# ENV PATH="/home/gtuser/.local/bin:${PATH}"
+EXPOSE 8080
 
-# Start Streamlit app
-# ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8080", "--server.address=0.0.0.0"]
+CMD python -m uvicorn app.main:app --host 0.0.0.0 --port 8080
