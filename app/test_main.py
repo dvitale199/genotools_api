@@ -34,40 +34,26 @@ def test_run_genotools():
 # test_read_main()
 # test_run_genotools()
 
-# payload = {
-#     "pfile": "~/Desktop/Projects/genotools_api/data/test_data/genotools_test",
-#     "out": "~/Desktop/Projects/genotools_api/data/test_data/CALLRATE_TEST",
-#     "callrate": 0.5,
-# }
+# fire up app
+# python -m uvicorn app.main:app --host 0.0.0.0 --port 8080
 
-# response = client.post("/run-genotools/", json=payload)
-
-# test localhost docker client
-import httpx
-
-async def lh_submit():
-    url = 'http://localhost:8080/run-genotools'
-    payload = {
-        "pfile": "~/Desktop/Projects/genotools_api/data/test_data/genotools_test",
-        "out": "~/Desktop/Projects/genotools_api/data/test_data/CALLRATE_TEST",
-        "callrate": 0.5,
-    }
-    async with httpx.AsyncClient() as client:
-        response = await client.post(url, json=payload)
-        print(response.text)
-        print(response.status_code)
-        # Assertions can be added here as well
-
-import asyncio
-asyncio.run(lh_submit())
-
+#post
+import requests
 
 url = 'http://localhost:8080/run-genotools/'
 payload = {
-    "pfile": "/app/data/test_data/genotools_test",
-    "out": "/app/data/test_data/CALLRATE_TEST",
+    "pfile": "/app/genotools_api/data/test_data/genotools_test",
+    "out": "/app/genotools_api/data/test_data/CALLRATE_SEX_TEST",
     "callrate": 0.5,
+    "sex": True
 }
-import requests
+
 response = requests.post(url, json=payload)
-print(response)
+
+print(response.status_code)
+print(response.json()['message'])
+print(response.json()['command'])
+print(response.json()['result'])
+
+# result = 'Your data has the following breakdown:\n- Genetic Sex:\n813 Females \n\n555 Males \n\n- Phenotypes:\n1166 Controls \n\n188 Cases \n\nOutput steps: sex\nRunning: callrate with input /app/genotools_api/data/test_data/genotools_test and output: /app/genotools_api/data/test_data/.vn30tpug_tmp/CALLRATE_SEX_TEST_callrate\nRunning: sex with input /app/genotools_api/data/test_data/.vn30tpug_tmp/CALLRATE_SEX_TEST_callrate and output: /app/genotools_api/data/test_data/CALLRATE_SEX_TEST\n'
+# print(result)
