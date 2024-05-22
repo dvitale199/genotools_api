@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 from app.main import app  # Import the FastAPI instance
 import requests
+import os
 
 client = TestClient(app)
 
@@ -38,22 +39,28 @@ def test_run_genotools():
 # python -m uvicorn app.main:app --host 0.0.0.0 --port 8080
 
 #post
-import requests
-
 url = 'http://localhost:8080/run-genotools/'
+# payload = {
+#     "pfile": "/app/genotools_api/data/test_data/genotools_test",
+#     "out": "/app/genotools_api/data/test_data/CALLRATE_SEX_TEST",
+#     "callrate": 0.5,
+#     "sex": True
+# }
 payload = {
-    "pfile": "/app/genotools_api/data/test_data/genotools_test",
-    "out": "/app/genotools_api/data/test_data/CALLRATE_SEX_TEST",
+    "pfile": "gs://genotools_api/data/genotools_test",
+    "out": "gs://genotools_api/data/CALLRATE_SEX_TEST",
     "callrate": 0.5,
-    "sex": True
+    "sex": True,
+    "storage_type": 'gcs'
 }
 
 response = requests.post(url, json=payload)
-
-print(response.status_code)
-print(response.json()['message'])
-print(response.json()['command'])
-print(response.json()['result'])
-
-# result = 'Your data has the following breakdown:\n- Genetic Sex:\n813 Females \n\n555 Males \n\n- Phenotypes:\n1166 Controls \n\n188 Cases \n\nOutput steps: sex\nRunning: callrate with input /app/genotools_api/data/test_data/genotools_test and output: /app/genotools_api/data/test_data/.vn30tpug_tmp/CALLRATE_SEX_TEST_callrate\nRunning: sex with input /app/genotools_api/data/test_data/.vn30tpug_tmp/CALLRATE_SEX_TEST_callrate and output: /app/genotools_api/data/test_data/CALLRATE_SEX_TEST\n'
-# print(result)
+print(response.json())
+# try:
+#     response_json = response.json()
+#     print(response_json['message'])
+#     print(response_json['command'])
+#     print(response_json['result'])
+# except requests.exceptions.JSONDecodeError:
+#     print("Response content is not valid JSON")
+#     print(response.text)

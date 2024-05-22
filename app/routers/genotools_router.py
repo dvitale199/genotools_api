@@ -1,7 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from genotools.utils import shell_do
+from google.cloud import storage
 import os
 
 router = APIRouter()
@@ -32,13 +33,29 @@ class GenoToolsParams(BaseModel):
     storage_type: str = 'local'
 
 
+def download_from_gcs(gcs_path, local_path):
+    storage_client = storage.Client()
+    bucket_name, blob_name = gcs_path.replace("gs://", "").split("/", 1)
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+    os.makedirs(os.path.dirname(local_path), exist_ok=True)
+    blob.download_to_filename(local_path)
+    return local_path
+
+
+def upload_to_gcs(local_path, gcs_path):
+    storage_client = storage.Client()
+    bucket_name, blob_name = gcs_path.replace("gs://", "").split("/", 1)
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+    blob.upload_from_filename(local_path)
+
+
 def execute_genotools(command: str, run_locally: bool = True):
 
     if run_locally:
         return shell_do(command, log=True, return_log=True)
-        # shell_do(command)
     else:
-        # Placeholder for GKE cluster execution method
         return {"message": "GKE execution method to be implemented"}
 
 
@@ -103,23 +120,41 @@ def construct_command(params: GenoToolsParams) -> str:
 @router.post("/run-genotools/")
 def run_genotools(params: GenoToolsParams):
     try:
-        command = construct_command(params)
-    except ValueError as e:
-        return {"message": str(e)}
+        gcs_out_path = None
+        if params.storage_type == 'gcs':
+            for ext in ['pgen', 'psam', 'pvar']:
+                in_base = os.path.basename(params.pfile)
+                gcs_path = f'{params.pfile}.{ext}'
+                local_path = f'/app/genotools_api/data/{in_base}.{ext}'
+                download_from_gcs(gcs_path, local_path)
 
-    if params.storage_type == 'gcs':
-        pass
-        # placeholder for handle calling kubernetes to run this command in a job
-    
-    if params.storage_type == 'local':
+            params.pfile = f'/app/genotools_api/data/{in_base}'
+            
+            gcs_out_path = params.out
+            if gcs_out_path:
+                out_base = os.path.basename(params.out)
+                os.makedirs("/app/genotools_api/output", exist_ok=True)
+                params.out = f'/app/genotools_api/output/{out_base}'
+            else:
+                raise ValueError("No output file provided")
+
+        command = construct_command(params)
         result = execute_genotools(command, run_locally=True)
-        # return command
-    
-    # formatted_result = format_result(result)
-    # return result
+
+        if params.storage_type == 'gcs' and gcs_out_path:
+            for ext in ['pgen', 'psam', 'pvar','json','outliers']:
+                upload_to_gcs(f'{params.out}.{ext}', f'{gcs_out_path}.{ext}')
+
+            upload_to_gcs(f'{params.out}_all_logs.log', f'{gcs_out_path}_all_logs.log')
+            upload_to_gcs(f'{params.out}_cleaned_logs.log', f'{gcs_out_path}_cleaned_logs.log')
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
     return {
         "message": "Job submitted", 
         "command": command,
         "result": result
     }
-

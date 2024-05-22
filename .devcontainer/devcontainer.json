@@ -9,5 +9,8 @@
   "mounts": [
     "source=${localWorkspaceFolder},target=/app/genotools_api,type=bind",
     "source=${localEnv:HOME}/.ssh,target=/home/gtuser/.ssh,type=bind"
-  ]
+  ],
+  "remoteEnv": {
+    "GOOGLE_APPLICATION_CREDENTIALS": "/app/genotools_api/genotools-2f2e43058216.json"
+  }
 }
