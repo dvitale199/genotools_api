@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
 from app.main import app  # Import the FastAPI instance
+import requests
+import os
 
 client = TestClient(app)
 
@@ -33,10 +35,32 @@ def test_run_genotools():
 # test_read_main()
 # test_run_genotools()
 
+# fire up app
+# python -m uvicorn app.main:app --host 0.0.0.0 --port 8080
+
+#post
+url = 'http://localhost:8080/run-genotools/'
+# payload = {
+#     "pfile": "/app/genotools_api/data/test_data/genotools_test",
+#     "out": "/app/genotools_api/data/test_data/CALLRATE_SEX_TEST",
+#     "callrate": 0.5,
+#     "sex": True
+# }
 payload = {
-    "pfile": "~/Desktop/Projects/genotools_api/data/test_data/genotools_test",
-    "out": "~/Desktop/Projects/genotools_api/data/test_data/CALLRATE_TEST",
+    "pfile": "gs://genotools_api/data/genotools_test",
+    "out": "gs://genotools_api/data/CALLRATE_SEX_TEST",
     "callrate": 0.5,
+    "sex": True,
+    "storage_type": 'gcs'
 }
 
-response = client.post("/run-genotools/", json=payload)
+response = requests.post(url, json=payload)
+print(response.json())
+# try:
+#     response_json = response.json()
+#     print(response_json['message'])
+#     print(response_json['command'])
+#     print(response_json['result'])
+# except requests.exceptions.JSONDecodeError:
+#     print("Response content is not valid JSON")
+#     print(response.text)

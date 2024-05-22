@@ -1,7 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from genotools.utils import shell_do
+from google.cloud import storage
 import os
 
 router = APIRouter()
@@ -16,78 +17,45 @@ class GenoToolsParams(BaseModel):
     warn: Optional[bool] = None
     callrate: Optional[float] = None
     sex: Optional[bool] = None
-    related: bool = None
-    related_cutoff: float = None
-    duplicated_cutoff: float = None
-    prune_related: bool = None
-    prune_duplicated: bool = None
+    related: Optional[bool] = None
+    related_cutoff: Optional[float] = None
+    duplicated_cutoff: Optional[float] = None
+    prune_related: Optional[bool] = None
+    prune_duplicated: Optional[bool] = None
     het: Optional[bool] = None
-    all_sample: bool = None
+    all_sample: Optional[bool] = None
+    all_variant: Optional[bool] = None
     maf: Optional[float] = None
+    ancestry: Optional[bool] = None
+    ref_panel: Optional[str] = None
+    ancestry_labels: Optional[str] = None
+    model: Optional[str] = None
     storage_type: str = 'local'
 
 
-@router.post("/run-genotools/")
-def run_genotools(params: GenoToolsParams):
-    params.pfile = expand_path(params.pfile) if params.pfile else None
-    params.out = expand_path(params.out) if params.out else None
-    command = "genotools"
-    if params.callrate is not None:
-        command += f" --callrate {params.callrate}"
-    if params.sex:
-        command += " --sex"
-    if params.het:
-        command += " --het"
-    if params.maf is not None:
-        command += f" --maf {params.maf}"
-    
-    if params.pfile:
-        geno_path = params.pfile
-        file_argstring = f" --pfile {geno_path}"
-        command += file_argstring
-    elif params.bfile:
-        geno_path = params.bfile
-        file_argstring = f" --bfile {geno_path}"
-        command += file_argstring
-    elif params.vcf:
-        geno_path = params.vcf
-        file_argstring = f" --vcf {geno_path}"
-        command += file_argstring
-    else:
-        return {"message": "No geno file provided"}
+def download_from_gcs(gcs_path, local_path):
+    storage_client = storage.Client()
+    bucket_name, blob_name = gcs_path.replace("gs://", "").split("/", 1)
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+    os.makedirs(os.path.dirname(local_path), exist_ok=True)
+    blob.download_to_filename(local_path)
+    return local_path
 
-    if params.out:
-        command += f" --out {params.out}"
-    else:
-        return {"message": "No output file provided"}
 
-    # placeholder for handle calling kubernetes to run this command in a job
-    execute_genotools(command, run_locally=True)
-    print(command)
-    return {
-        "message": "Job submitted", 
-        "command": command
-        # "result:": result
-        }
+def upload_to_gcs(local_path, gcs_path):
+    storage_client = storage.Client()
+    bucket_name, blob_name = gcs_path.replace("gs://", "").split("/", 1)
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+    blob.upload_from_filename(local_path)
 
 
 def execute_genotools(command: str, run_locally: bool = True):
-    """
-    Executes the genotools command.
-    
-    Args:
-    - command (str): The command to execute.
-    - run_locally (bool): If True, the command is executed locally using shell_do.
-      If False, the command is prepared for execution in a GKE cluster (method to be implemented).
-    
-    Returns:
-    - dict: A dictionary with either the output of the command or an error message.
-    """
+
     if run_locally:
         return shell_do(command, log=True, return_log=True)
-        # shell_do(command)
     else:
-        # Placeholder for GKE cluster execution method
         return {"message": "GKE execution method to be implemented"}
 
 
@@ -95,6 +63,98 @@ def expand_path(path: str) -> str:
     """Expand the user path."""
     return os.path.expanduser(path)
 
-# def create_payload(**kwargs):
-#     # Create a dictionary only with the parameters provided
-#     return {key: value for key, value in kwargs.items() if value is not None}
+
+def construct_command(params: GenoToolsParams) -> str:
+    command = "genotools"
+    
+    # Mapping options to their respective values in params
+    options_with_values = {
+        "--callrate": params.callrate,
+        "--related_cutoff": params.related_cutoff,
+        "--duplicated_cutoff": params.duplicated_cutoff,
+        "--maf": params.maf,
+        "--ref_panel": params.ref_panel,
+        "--ancestry_labels": params.ancestry_labels,
+        "--model": params.model
+    }
+
+    flags = [
+        ("--full_output", params.full_output),
+        ("--skip_fails", params.skip_fails),
+        ("--warn", params.warn),
+        ("--sex", params.sex),
+        ("--related", params.related),
+        ("--prune_related", params.prune_related),
+        ("--prune_duplicated", params.prune_duplicated),
+        ("--het", params.het),
+        ("--all_sample", params.all_sample),
+        ("--all_variant", params.all_variant),
+        ("--ancestry", params.ancestry)
+    ]
+
+    for option, value in options_with_values.items():
+        if value is not None:
+            command += f" {option} {value}"
+    
+    for flag, value in flags:
+        if value:
+            command += f" {flag}"
+
+    if params.pfile:
+        command += f" --pfile {expand_path(params.pfile)}"
+    elif params.bfile:
+        command += f" --bfile {expand_path(params.bfile)}"
+    elif params.vcf:
+        command += f" --vcf {expand_path(params.vcf)}"
+    else:
+        raise ValueError("No geno file provided")
+
+    if params.out:
+        command += f" --out {expand_path(params.out)}"
+    else:
+        raise ValueError("No output file provided")
+
+    return command
+
+
+@router.post("/run-genotools/")
+def run_genotools(params: GenoToolsParams):
+    try:
+        gcs_out_path = None
+        if params.storage_type == 'gcs':
+            for ext in ['pgen', 'psam', 'pvar']:
+                in_base = os.path.basename(params.pfile)
+                gcs_path = f'{params.pfile}.{ext}'
+                local_path = f'/app/genotools_api/data/{in_base}.{ext}'
+                download_from_gcs(gcs_path, local_path)
+
+            params.pfile = f'/app/genotools_api/data/{in_base}'
+            
+            gcs_out_path = params.out
+            if gcs_out_path:
+                out_base = os.path.basename(params.out)
+                os.makedirs("/app/genotools_api/output", exist_ok=True)
+                params.out = f'/app/genotools_api/output/{out_base}'
+            else:
+                raise ValueError("No output file provided")
+
+        command = construct_command(params)
+        result = execute_genotools(command, run_locally=True)
+
+        if params.storage_type == 'gcs' and gcs_out_path:
+            for ext in ['pgen', 'psam', 'pvar','json','outliers']:
+                upload_to_gcs(f'{params.out}.{ext}', f'{gcs_out_path}.{ext}')
+
+            upload_to_gcs(f'{params.out}_all_logs.log', f'{gcs_out_path}_all_logs.log')
+            upload_to_gcs(f'{params.out}_cleaned_logs.log', f'{gcs_out_path}_cleaned_logs.log')
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    return {
+        "message": "Job submitted", 
+        "command": command,
+        "result": result
+    }
