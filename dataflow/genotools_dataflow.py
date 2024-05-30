@@ -1,6 +1,14 @@
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions, GoogleCloudOptions, StandardOptions, WorkerOptions
-import os
+
+class CustomOptions(PipelineOptions):
+    @classmethod
+    def _add_argparse_args(cls, parser):
+        parser.add_value_provider_argument('--input_file', type=str, help='Input file path')
+        parser.add_value_provider_argument('--output_prefix', type=str, help='Output prefix')
+        parser.add_value_provider_argument('--extra_args', type=str, help='Extra arguments for genotools')
+        parser.add_value_provider_argument('--script_to_run', type=str, help='Script to run')
+        parser.add_value_provider_argument('--command_template', type=str, help='Command template')
 
 class RunGenotoolsCommand(beam.DoFn):
     def __init__(self, command_template):
@@ -13,7 +21,7 @@ class RunGenotoolsCommand(beam.DoFn):
         extra_args = element['extra_args']
         
         # Construct the command
-        command = self.command_template.format(input_file=input_file, output_prefix=output_prefix, extra_args=extra_args).split()
+        command = self.command_template.get().format(input_file=input_file, output_prefix=output_prefix, extra_args=extra_args).split()
         
         # Execute the command
         result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -25,35 +33,25 @@ class RunGenotoolsCommand(beam.DoFn):
 
 def run():
     options = PipelineOptions()
+    custom_options = options.view_as(CustomOptions)
     google_cloud_options = options.view_as(GoogleCloudOptions)
-    google_cloud_options.project = os.getenv('GCP_PROJECT')
-    google_cloud_options.job_name = os.getenv('JOB_NAME')
-    google_cloud_options.staging_location = os.getenv('STAGING_LOCATION')
-    google_cloud_options.temp_location = os.getenv('TEMP_LOCATION')
+    google_cloud_options.project = custom_options.project.get()
+    google_cloud_options.job_name = custom_options.job_name.get()
+    google_cloud_options.staging_location = custom_options.staging_location.get()
+    google_cloud_options.temp_location = custom_options.temp_location.get()
     options.view_as(StandardOptions).runner = 'DataflowRunner'
     
     # Specify the custom Docker image
     worker_options = options.view_as(WorkerOptions)
-    worker_options.worker_harness_container_image = os.getenv('WORKER_HARNESS_CONTAINER_IMAGE')
+    worker_options.worker_harness_container_image = custom_options.worker_harness_container_image.get()
     
     # Command template
-    command_template = os.getenv("COMMAND_TEMPLATE")
-    
-    # Input parameters
-    input_file = os.getenv('INPUT_FILE')
-    output_prefix = os.getenv('OUTPUT_PREFIX')
-    extra_args = os.getenv('EXTRA_ARGS')
-
-    # Ensure that all necessary environment variables are set
-    if not all([google_cloud_options.project, google_cloud_options.job_name, google_cloud_options.staging_location,
-                google_cloud_options.temp_location, worker_options.worker_harness_container_image,
-                command_template, input_file, output_prefix, extra_args]):
-        raise ValueError("One or more required environment variables are not set.")
+    command_template = custom_options.command_template.get()
     
     with beam.Pipeline(options=options) as p:
         (p
          | 'ReadInputFiles' >> beam.Create([
-             {'input_file': input_file, 'output_prefix': output_prefix, 'extra_args': extra_args}
+             {'input_file': custom_options.input_file.get(), 'output_prefix': custom_options.output_prefix.get(), 'extra_args': custom_options.extra_args.get()}
          ])
          | 'RunGenotools' >> beam.ParDo(RunGenotoolsCommand(command_template))
          | 'WriteOutput' >> beam.Map(lambda x: f"Output file: {x}")
