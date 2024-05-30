@@ -1,5 +1,5 @@
 import apache_beam as beam
-from apache_beam.options.pipeline_options import PipelineOptions, GoogleCloudOptions, StandardOptions, WorkerOptions
+from apache_beam.options.pipeline_options import PipelineOptions, GoogleCloudOptions, StandardOptions
 
 class CustomOptions(PipelineOptions):
     @classmethod
@@ -35,23 +35,19 @@ def run():
     options = PipelineOptions()
     custom_options = options.view_as(CustomOptions)
     google_cloud_options = options.view_as(GoogleCloudOptions)
-    google_cloud_options.project = custom_options.project.get()
-    google_cloud_options.job_name = custom_options.job_name.get()
-    google_cloud_options.staging_location = custom_options.staging_location.get()
-    google_cloud_options.temp_location = custom_options.temp_location.get()
+    google_cloud_options.project = custom_options.project
+    google_cloud_options.job_name = custom_options.job_name
+    google_cloud_options.staging_location = custom_options.staging_location
+    google_cloud_options.temp_location = custom_options.temp_location
     options.view_as(StandardOptions).runner = 'DataflowRunner'
     
-    # Specify the custom Docker image
-    worker_options = options.view_as(WorkerOptions)
-    worker_options.worker_harness_container_image = custom_options.worker_harness_container_image.get()
-    
     # Command template
-    command_template = custom_options.command_template.get()
+    command_template = custom_options.command_template
     
     with beam.Pipeline(options=options) as p:
         (p
          | 'ReadInputFiles' >> beam.Create([
-             {'input_file': custom_options.input_file.get(), 'output_prefix': custom_options.output_prefix.get(), 'extra_args': custom_options.extra_args.get()}
+             {'input_file': custom_options.input_file, 'output_prefix': custom_options.output_prefix, 'extra_args': custom_options.extra_args}
          ])
          | 'RunGenotools' >> beam.ParDo(RunGenotoolsCommand(command_template))
          | 'WriteOutput' >> beam.Map(lambda x: f"Output file: {x}")
