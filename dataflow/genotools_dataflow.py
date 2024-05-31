@@ -24,9 +24,10 @@ class RunGenotoolsCommand(beam.DoFn):
         command = self.command_template.get().format(input_file=input_file, output_prefix=output_prefix, extra_args=extra_args).split()
         
         # Execute the command
-        result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        if result.returncode != 0:
-            raise RuntimeError(f"Command failed: {result.stderr.decode('utf-8')}")
+        print(command)
+        # result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # if result.returncode != 0:
+        #     raise RuntimeError(f"Command failed: {result.stderr.decode('utf-8')}")
         
         # Return the output prefix or any other result if needed
         return [output_prefix]

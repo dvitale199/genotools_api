@@ -1,4 +1,4 @@
-FROM python:3.11.3
+FROM apache/beam_python3.10_sdk:2.56.0
 LABEL maintainer="Dan Vitale <dan@datatecnica.com>"
 
 RUN adduser --disabled-password --gecos "" gtuser
@@ -13,9 +13,12 @@ RUN git clone https://github.com/dvitale199/genotools_api.git
 
 WORKDIR /app/genotools_api
 
+COPY genotools_dataflow.py .
+
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt && \
-    pip install .
+    pip install -r requirements.txt && \
+    pip install . && \
+    pip install --upgrade apache-beam[gcp]
 
 ENTRYPOINT ["sh", "-c"]
 CMD ["python $SCRIPT_TO_RUN"]
