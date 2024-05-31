@@ -17,8 +17,7 @@ COPY genotools_dataflow.py .
 
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt && \
-    pip install . && \
-    pip install --upgrade apache-beam[gcp]
+    pip install .
 
 ENTRYPOINT ["sh", "-c"]
 CMD ["python $SCRIPT_TO_RUN"]
