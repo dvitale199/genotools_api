@@ -72,7 +72,7 @@ from google.auth.transport.requests import Request
 from google.oauth2 import service_account
 
 # Path to your service account key file
-SERVICE_ACCOUNT_FILE = '/app/genotools_api/genotools-2f2e43058216.json'
+SERVICE_ACCOUNT_FILE = '/app/genotools_api/.secrets/genotools-2f2e43058216.json'
 IAP_CLIENT_ID = '143035444378-avffc25rdaenp4ajs3ujst0e482vq6nn.apps.googleusercontent.com'
 
 # Obtain an OpenID Connect token from the service account credentials
