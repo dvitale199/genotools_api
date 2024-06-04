@@ -3,10 +3,10 @@ name: Deploy to Google App Engine
 on:
   push:
     branches:
-      - main
+      - main  # Trigger deployment on push to the main branch
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -34,5 +34,30 @@ jobs:
       with:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
 
+    - name: Get current version
+      id: get_version
+      run: |
+        git fetch --tags
+        TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
+        VERSION=${TAG:-v0.0.0}
+        VERSION=${VERSION/v/}
+        IFS='.' read -ra ADDR <<< "$VERSION"
+        NEW_VERSION="v${ADDR[0]}.${ADDR[1]}.$((${ADDR[2]}+1))"
+        echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+
+    - name: Build Docker image
+      run: |
+        docker build -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/genotools/genotools:${{ env.NEW_VERSION }} .
+        /genotools/genotools/genotools-dataflow:v0.0.3
+    - name: Push Docker image to Google Container Registry
+      run: |
+        docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/genotools/genotools:${{ env.NEW_VERSION }}
+
     - name: Deploy to App Engine
-      run: gcloud app deploy --quiet
+      run: |
+        gcloud app deploy app.yaml --image-url=gcr.io/${{ secrets.GCP_PROJECT_ID }}/genotools-api:${{ env.NEW_VERSION }} --quiet
+
+    - name: Tag new version
+      run: |
+        git tag ${{ env.NEW_VERSION }}
+        git push origin ${{ env.NEW_VERSION }}
