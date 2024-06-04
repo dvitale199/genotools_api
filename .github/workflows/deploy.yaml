@@ -36,9 +36,10 @@ jobs:
 
     - name: Configure Docker to use gcloud as a credential helper
       run: gcloud auth configure-docker us-central1-docker.pkg.dev
-      
-    - name: test project id
-        run: echo ${{ secrets.GCP_PROJECT_ID }}
+
+    - name: Build Docker image
+      run: |
+        echo ${{ secrets.GCP_PROJECT_ID }}
 
     - name: Build Docker image
       run: |
