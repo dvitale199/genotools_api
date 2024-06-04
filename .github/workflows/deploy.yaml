@@ -3,7 +3,7 @@ name: Deploy to Google App Engine
 on:
   push:
     branches:
-      - main
+      - main  # Trigger deployment on push to the main branch
 
 jobs:
   build-and-deploy:
@@ -33,18 +33,15 @@ jobs:
       uses: google-github-actions/setup-gcloud@v1
       with:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
-    
+
     - name: Configure Docker to use gcloud as a credential helper
-      run: |
-        gcloud auth login
-        gcloud auth configure-docker us-central1-docker.pkg.dev
+      run: gcloud auth configure-docker us-central1-docker.pkg.dev
 
     - name: Build Docker image
       run: |
         docker build -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/genotools/genotools:latest .
-        
 
-    - name: Push Docker image to Google Container Registry
+    - name: Push Docker image to Google Artifact Registry
       run: |
         docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/genotools/genotools:latest
 
