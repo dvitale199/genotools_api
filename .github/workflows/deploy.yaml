@@ -36,13 +36,13 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/genotools/genotools-dataflow:latest .
+        docker build -t us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/genotools/genotools:latest .
         
 
     - name: Push Docker image to Google Container Registry
       run: |
-        docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/genotools/genotools-dataflow:latest
+        docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/genotools/genotools:latest
 
     - name: Deploy to App Engine
       run: |
-        gcloud app deploy app.yaml --image-url=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/genotools/genotools-dataflow:latest --quiet
+        gcloud app deploy app.yaml --image-url=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/genotools/genotools:latest --quiet
