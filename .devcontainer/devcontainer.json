@@ -1,16 +1,15 @@
 {
   "name": "genotools FastAPI Dev Container",
   "context": "..",
-  "dockerFile": "Dockerfile",
+  "dockerFile": "../Dockerfile",
   "forwardPorts": [8080],
-  "postCreateCommand": "pip install -r /app/genotools_api/requirements.txt",
   "remoteUser": "gtuser",
-  "workspaceFolder": "/app/genotools_api",
+  "workspaceFolder": "/app",
   "mounts": [
-    "source=${localWorkspaceFolder},target=/app/genotools_api,type=bind",
+    "source=${localWorkspaceFolder},target=/app,type=bind",
     "source=${localEnv:HOME}/.ssh,target=/home/gtuser/.ssh,type=bind"
   ],
   "remoteEnv": {
-    "GOOGLE_APPLICATION_CREDENTIALS": "/app/genotools_api/genotools-2f2e43058216.json"
+    "GOOGLE_APPLICATION_CREDENTIALS": "/app/.secrets/genotools-2f2e43058216.json"
   }
 }

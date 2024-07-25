@@ -1,6 +1,0 @@
-fastapi==0.111.0
-pydantic==2.7.2
-Requests==2.32.3
-setuptools==69.5.1
-SQLAlchemy==2.0.30
-the_real_genotools==1.2.2

@@ -1,30 +1,31 @@
-FROM python:3.11.3
+FROM python:3.11-slim
 LABEL maintainer="Dan Vitale <dan@datatecnica.com>"
 
-# Create a non-root user early to avoid running commands as root
+RUN apt-get update && apt-get install -y \
+    gcc \
+    build-essential \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN adduser --disabled-password --gecos "" gtuser
 
-# Set the working directory
 WORKDIR /app
 
-# Update package list and install git
-RUN apt-get update && \
-    apt-get install -y git && \
-    rm -rf /var/lib/apt/lists/*
+COPY pyproject.toml poetry.lock /app/
 
-# Clone the repository
-RUN git clone https://github.com/dvitale199/genotools_api.git
+RUN pip install poetry
 
-# Change to the app directory
-WORKDIR /app/genotools_api
+RUN poetry config virtualenvs.create false \
+    && poetry install --no-root --no-dev --verbose \
+    && apt-get remove -y gcc build-essential \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt && \
-    pip install .
+COPY . /app
 
-# Expose port 8080
-EXPOSE 8080
+RUN chown -R gtuser:gtuser /app
 
-# Start the application
-CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+USER gtuser
+
+CMD ["uvicorn", "genotools_api.main:app", "--host", "0.0.0.0", "--port", "8080"]
