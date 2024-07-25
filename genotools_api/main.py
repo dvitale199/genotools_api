@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers.genotools_router import router as genotools_router
+from genotools_api.endpoints.genotools_router import router as genotools_router
 
 app = FastAPI()
 

@@ -1,37 +1,7 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import Optional
 from genotools.utils import shell_do
 from google.cloud import storage
 import os
-
-router = APIRouter()
-
-class GenoToolsParams(BaseModel):
-    bfile: Optional[str] = None
-    pfile: Optional[str] = None
-    vcf: Optional[str] = None
-    out: Optional[str] = None
-    full_output: Optional[bool] = None
-    skip_fails: Optional[bool] = None
-    warn: Optional[bool] = None
-    callrate: Optional[float] = None
-    sex: Optional[bool] = None
-    related: Optional[bool] = None
-    related_cutoff: Optional[float] = None
-    duplicated_cutoff: Optional[float] = None
-    prune_related: Optional[bool] = None
-    prune_duplicated: Optional[bool] = None
-    het: Optional[bool] = None
-    all_sample: Optional[bool] = None
-    all_variant: Optional[bool] = None
-    maf: Optional[float] = None
-    ancestry: Optional[bool] = None
-    ref_panel: Optional[str] = None
-    ancestry_labels: Optional[str] = None
-    model: Optional[str] = None
-    storage_type: str = 'local'
-
+from genotools_api.models.models import GenoToolsParams
 
 def download_from_gcs(gcs_path, local_path):
     storage_client = storage.Client()
@@ -115,46 +85,3 @@ def construct_command(params: GenoToolsParams) -> str:
         raise ValueError("No output file provided")
 
     return command
-
-
-@router.post("/run-genotools/")
-def run_genotools(params: GenoToolsParams):
-    try:
-        gcs_out_path = None
-        if params.storage_type == 'gcs':
-            for ext in ['pgen', 'psam', 'pvar']:
-                in_base = os.path.basename(params.pfile)
-                gcs_path = f'{params.pfile}.{ext}'
-                local_path = f'/app/genotools_api/data/{in_base}.{ext}'
-                download_from_gcs(gcs_path, local_path)
-
-            params.pfile = f'/app/genotools_api/data/{in_base}'
-            
-            gcs_out_path = params.out
-            if gcs_out_path:
-                out_base = os.path.basename(params.out)
-                os.makedirs("/app/genotools_api/output", exist_ok=True)
-                params.out = f'/app/genotools_api/output/{out_base}'
-            else:
-                raise ValueError("No output file provided")
-
-        command = construct_command(params)
-        result = execute_genotools(command, run_locally=True)
-
-        if params.storage_type == 'gcs' and gcs_out_path:
-            for ext in ['pgen', 'psam', 'pvar','json','outliers']:
-                upload_to_gcs(f'{params.out}.{ext}', f'{gcs_out_path}.{ext}')
-
-            upload_to_gcs(f'{params.out}_all_logs.log', f'{gcs_out_path}_all_logs.log')
-            upload_to_gcs(f'{params.out}_cleaned_logs.log', f'{gcs_out_path}_cleaned_logs.log')
-
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-    return {
-        "message": "Job submitted", 
-        "command": command,
-        "result": result
-    }
