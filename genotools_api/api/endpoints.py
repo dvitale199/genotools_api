@@ -10,12 +10,15 @@ from genotools_api.utils.utils import download_from_gcs, construct_command, exec
 load_dotenv()
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 API_KEY = os.getenv("API_KEY")
 API_KEY_NAME = os.getenv("API_KEY_NAME")
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=True)
 
 def get_api_key(api_key_header: str = Security(api_key_header)):
+    logger.debug(f"Expected API key: {API_KEY}")
+    logger.debug(f"Received API key: {api_key_header}")
     if api_key_header == API_KEY:
         return api_key_header
     else:
@@ -30,9 +33,10 @@ router = APIRouter()
 async def root():
     return "Welcome to GenoTools"
 
-
 @router.post("/run-genotools/")
 def run_genotools(params: GenoToolsParams, api_key: APIKey = Depends(get_api_key)):
+    logger.debug(f"Received payload: {params}")
+    logger.debug(f"Using API key: {api_key}")
     try:
         gcs_out_path = None
         if params.storage_type == 'gcs':
@@ -56,7 +60,7 @@ def run_genotools(params: GenoToolsParams, api_key: APIKey = Depends(get_api_key
         result = execute_genotools(command, run_locally=True)
 
         if params.storage_type == 'gcs' and gcs_out_path:
-            for ext in ['pgen', 'psam', 'pvar','json','outliers']:
+            for ext in ['pgen', 'psam', 'pvar', 'json', 'outliers']:
                 upload_to_gcs(f'{params.out}.{ext}', f'{gcs_out_path}.{ext}')
 
             upload_to_gcs(f'{params.out}_all_logs.log', f'{gcs_out_path}_all_logs.log')

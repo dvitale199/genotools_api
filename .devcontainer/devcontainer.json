@@ -10,6 +10,6 @@
     "source=${localEnv:HOME}/.ssh,target=/home/gtuser/.ssh,type=bind"
   ],
   "remoteEnv": {
-    "GOOGLE_APPLICATION_CREDENTIALS": "/app/.secrets/genotools_api/genotools-2f2e43058216.json"
+    "GOOGLE_APPLICATION_CREDENTIALS": "/app/.secrets/genotools-2f2e43058216.json"
   }
 }
