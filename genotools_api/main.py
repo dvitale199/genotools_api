@@ -1,11 +1,10 @@
 from fastapi import FastAPI
-from genotools_api.endpoints.genotools_router import router as genotools_router
+from genotools_api.api.endpoints import router
 
 app = FastAPI()
 
-@app.get("/")
-async def root():
-    return {"message": "Welcome to the GenoTools API!"}
+app.include_router(router)
 
-# Include the router for genotools
-app.include_router(genotools_router)
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8080)

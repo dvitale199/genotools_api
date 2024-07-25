@@ -1,0 +1,15 @@
+{
+  "name": "genotools FastAPI Dev Container",
+  "context": "..",
+  "dockerFile": "../Dockerfile",
+  "forwardPorts": [8080],
+  "remoteUser": "gtuser",
+  "workspaceFolder": "/app",
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/app,type=bind",
+    "source=${localEnv:HOME}/.ssh,target=/home/gtuser/.ssh,type=bind"
+  ],
+  "remoteEnv": {
+    "GOOGLE_APPLICATION_CREDENTIALS": "/app/.secrets/genotools_api/genotools-2f2e43058216.json"
+  }
+}

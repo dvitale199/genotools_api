@@ -32,7 +32,7 @@ async def root():
 
 
 @router.post("/run-genotools/")
-def run_genotools(params: GenoToolsParams):
+def run_genotools(params: GenoToolsParams, api_key: APIKey = Depends(get_api_key)):
     try:
         gcs_out_path = None
         if params.storage_type == 'gcs':
