@@ -11,6 +11,7 @@ python = "^3.11"
 requests = "^2.32.3"
 the-real-genotools = "^1.2.4"
 fastapi = "^0.111.1"
+uvicorn = "^0.30.3"
 
 
 [build-system]
