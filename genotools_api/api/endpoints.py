@@ -33,26 +33,30 @@ router = APIRouter()
 async def root():
     return "Welcome to GenoTools"
 
+
 @router.post("/run-genotools/")
 def run_genotools(params: GenoToolsParams, api_key: APIKey = Depends(get_api_key)):
     logger.debug(f"Received payload: {params}")
     logger.debug(f"Using API key: {api_key}")
     try:
         gcs_out_path = None
+        local_files = []
+
         if params.storage_type == 'gcs':
             for ext in ['pgen', 'psam', 'pvar']:
                 in_base = os.path.basename(params.pfile)
                 gcs_path = f'{params.pfile}.{ext}'
-                local_path = f'/app/genotools_api/data/{in_base}.{ext}'
+                local_path = f'/app/data/{in_base}.{ext}'
                 download_from_gcs(gcs_path, local_path)
+                local_files.append(local_path)
 
-            params.pfile = f'/app/genotools_api/data/{in_base}'
+            params.pfile = f'/app/data/{in_base}'
             
             gcs_out_path = params.out
             if gcs_out_path:
                 out_base = os.path.basename(params.out)
-                os.makedirs("/app/genotools_api/output", exist_ok=True)
-                params.out = f'/app/genotools_api/output/{out_base}'
+                os.makedirs("/app/output", exist_ok=True)
+                params.out = f'/app/output/{out_base}'
             else:
                 raise ValueError("No output file provided")
 
@@ -60,11 +64,18 @@ def run_genotools(params: GenoToolsParams, api_key: APIKey = Depends(get_api_key
         result = execute_genotools(command, run_locally=True)
 
         if params.storage_type == 'gcs' and gcs_out_path:
-            for ext in ['pgen', 'psam', 'pvar', 'json', 'outliers']:
-                upload_to_gcs(f'{params.out}.{ext}', f'{gcs_out_path}.{ext}')
+            output_files = [f'{params.out}.{ext}' for ext in ['pgen', 'psam', 'pvar', 'json', 'outliers']]
+            output_files.extend([f'{params.out}_all_logs.log', f'{params.out}_cleaned_logs.log'])
 
-            upload_to_gcs(f'{params.out}_all_logs.log', f'{gcs_out_path}_all_logs.log')
-            upload_to_gcs(f'{params.out}_cleaned_logs.log', f'{gcs_out_path}_cleaned_logs.log')
+            # for file in output_files:
+            for ext in ['.pgen', '.psam', '.pvar', '.json', '.outliers', '_all_logs.log', '_cleaned_logs.log']:
+                local_file = f'{params.out}{ext}'
+                upload_to_gcs(local_file, f'{gcs_out_path}{ext}')
+                local_files.append(local_file)
+
+        for file in local_files:
+            if os.path.exists(file):
+                os.remove(file)
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -76,3 +87,4 @@ def run_genotools(params: GenoToolsParams, api_key: APIKey = Depends(get_api_key
         "command": command,
         "result": result
     }
+    

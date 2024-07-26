@@ -4,7 +4,6 @@ LABEL maintainer="Dan Vitale <dan@datatecnica.com>"
 RUN apt-get update && apt-get install -y \
     gcc \
     build-essential \
-    git \
     && rm -rf /var/lib/apt/lists/*
 
 RUN adduser --disabled-password --gecos "" gtuser

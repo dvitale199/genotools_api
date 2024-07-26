@@ -7,7 +7,7 @@ load_dotenv()
 url = 'http://0.0.0.0:8080/run-genotools/'
 payload = {
     "pfile": "gs://genotools_api/data/genotools_test",
-    "out": "gs://genotools_api/data/TEST3",
+    "out": "gs://genotools_api/data/TEST",
     "callrate": 0.5,
     "sex": True,
     "storage_type": "gcs"
