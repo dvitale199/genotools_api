@@ -17,11 +17,13 @@ API_KEY_NAME = os.getenv("API_KEY_NAME")
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=True)
 
 def get_api_key(api_key_header: str = Security(api_key_header)):
-    logger.debug(f"Expected API key: {API_KEY}")
-    logger.debug(f"Received API key: {api_key_header}")
+    logger.debug(f"Expected API_KEY_NAME: {API_KEY_NAME}")
+    logger.debug(f"Expected API_KEY: {API_KEY}")
+    logger.debug(f"Received api_key_header: {api_key_header}")
     if api_key_header == API_KEY:
         return api_key_header
     else:
+        logger.debug("Invalid API key received")
         raise HTTPException(
             status_code=403,
             detail="Could not validate credentials",
