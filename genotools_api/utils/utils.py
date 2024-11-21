@@ -3,6 +3,7 @@ from google.cloud import storage
 import os
 from genotools_api.models.models import GenoToolsParams
 
+
 def download_from_gcs(gcs_path, local_path):
     storage_client = storage.Client()
     bucket_name, blob_name = gcs_path.replace("gs://", "").split("/", 1)
@@ -44,7 +45,7 @@ def construct_command(params: GenoToolsParams) -> str:
         "--duplicated_cutoff": params.duplicated_cutoff,
         "--maf": params.maf,
         "--ref_panel": params.ref_panel,
-        "--ancestry_labels": params.ancestry_labels,
+        "--ref_labels": params.ref_labels,
         "--model": params.model
     }
 

@@ -42,14 +42,39 @@ def run_genotools(params: GenoToolsParams, api_key: APIKey = Depends(get_api_key
     try:
         gcs_out_path = None
         if params.storage_type == 'gcs':
+            in_base = os.path.basename(params.pfile)
             for ext in ['pgen', 'psam', 'pvar']:
-                in_base = os.path.basename(params.pfile)
                 gcs_path = f'{params.pfile}.{ext}'
                 local_path = f'/app/genotools_api/data/{in_base}.{ext}'
                 download_from_gcs(gcs_path, local_path)
-
+                
             params.pfile = f'/app/genotools_api/data/{in_base}'
-            
+
+            if params.ref_panel:
+                ref_panel_name = os.path.basename(params.ref_panel)
+                local_ref_panel_path = f'/app/genotools_api/data/{ref_panel_name}'
+                
+                for ext in ['bed','bim','fam']:
+                    download_from_gcs(f'{params.ref_panel}.{ext}', f'{local_ref_panel_path}.{ext}')
+                    
+                params.ref_panel = local_ref_panel_path
+
+            if params.ref_labels:
+                ref_labels_name = os.path.basename(params.ref_labels)
+                local_ref_labels_path = f'/app/genotools_api/data/{ref_labels_name}'
+                download_from_gcs(params.ref_labels, local_ref_labels_path)
+                params.ref_labels = local_ref_labels_path
+
+            if params.model:
+                common_snps = params.model.replace('.pkl','.common_snps')
+                model_name = os.path.basename(params.model)
+                common_snps_name = os.path.basename(common_snps)
+                local_model_path = f'/app/genotools_api/data/{model_name}'
+                local_common_snps_path = f'/app/genotools_api/data/{common_snps_name}'
+                download_from_gcs(params.model, local_model_path)
+                download_from_gcs(common_snps, local_common_snps_path)
+                params.model = local_model_path
+
             gcs_out_path = params.out
             if gcs_out_path:
                 out_base = os.path.basename(params.out)
@@ -59,22 +84,35 @@ def run_genotools(params: GenoToolsParams, api_key: APIKey = Depends(get_api_key
                 raise ValueError("No output file provided")
 
         command = construct_command(params)
+        print(command)
         result = execute_genotools(command, run_locally=True)
 
         if params.storage_type == 'gcs' and gcs_out_path:
-            for ext in ['pgen', 'psam', 'pvar', 'json', 'outliers']:
-                upload_to_gcs(f'{params.out}.{ext}', f'{gcs_out_path}.{ext}')
+            output_extensions = ['pgen', 'psam', 'pvar', 'json', 'outliers']
+            for ext in output_extensions:
+                local_file = f'{params.out}.{ext}'
+                gcs_file = f'{gcs_out_path}.{ext}'
+                if os.path.exists(local_file):
+                    upload_to_gcs(local_file, gcs_file)
 
-            upload_to_gcs(f'{params.out}_all_logs.log', f'{gcs_out_path}_all_logs.log')
-            upload_to_gcs(f'{params.out}_cleaned_logs.log', f'{gcs_out_path}_cleaned_logs.log')
+            log_files = [
+                f'{params.out}_all_logs.log',
+                f'{params.out}_cleaned_logs.log'
+            ]
+            for log_file in log_files:
+                if os.path.exists(log_file):
+                    gcs_log_file = os.path.join(os.path.dirname(gcs_out_path), os.path.basename(log_file))
+                    upload_to_gcs(log_file, gcs_log_file)
 
     except ValueError as e:
+        logger.error(f"ValueError: {e}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        logger.exception("Unexpected error occurred")
         raise HTTPException(status_code=500, detail=str(e))
 
     return {
-        "message": "Job submitted", 
+        "message": "Job submitted",
         "command": command,
         "result": result
     }

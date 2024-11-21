@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Union
 
 class GenoToolsParams(BaseModel):
     bfile: Optional[str] = None
@@ -9,7 +9,8 @@ class GenoToolsParams(BaseModel):
     full_output: Optional[bool] = None
     skip_fails: Optional[bool] = None
     warn: Optional[bool] = None
-    callrate: Optional[float] = None
+    # can use the following for others that take a value but also have a default in the package
+    callrate: Optional[Union[bool, float]] = None
     sex: Optional[bool] = None
     related: Optional[bool] = None
     related_cutoff: Optional[float] = None
@@ -22,6 +23,6 @@ class GenoToolsParams(BaseModel):
     maf: Optional[float] = None
     ancestry: Optional[bool] = None
     ref_panel: Optional[str] = None
-    ancestry_labels: Optional[str] = None
+    ref_labels: Optional[str] = None
     model: Optional[str] = None
     storage_type: str = 'local'
