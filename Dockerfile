@@ -7,8 +7,6 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-RUN adduser --disabled-password --gecos "" gtuser
-
 WORKDIR /app
 
 COPY pyproject.toml poetry.lock /app/
@@ -24,8 +22,6 @@ RUN poetry config virtualenvs.create false \
 
 COPY . /app
 
-RUN chown -R gtuser:gtuser /app
-
-USER gtuser
+EXPOSE 8080
 
 CMD ["uvicorn", "genotools_api.main:app", "--host", "0.0.0.0", "--port", "8080"]

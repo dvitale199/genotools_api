@@ -4,8 +4,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-url = 'http://0.0.0.0:8080/run-genotools/'
-
+# local
+# url = 'http://0.0.0.0:8080/run-genotools/'
+# url = 'https://genotools-api-776926281950.europe-west4.run.app/run-genotools/'
 
 # genotools \
 #   --pfile /path/to/genotypes/for/qc \
@@ -29,13 +30,38 @@ url = 'http://0.0.0.0:8080/run-genotools/'
 #     "storage_type": "gcs"
 # }
 
+# payload = {
+#     "pfile": "gs://syed_testing/GP2_merge_AAPDGC",
+#     "out": "gs://syed_testing/res/dan_cloud_run_test",
+#     "callrate": 0.5,
+#     "sex": True,
+#     "storage_type": "gcs"
+# }
+
+# API_KEY = os.getenv("API_KEY")
+# API_KEY_NAME = os.getenv("API_KEY_NAME")
+
+# headers = {
+#     API_KEY_NAME: API_KEY,
+#     "Content-Type": "application/json"
+# }
+
+# response = requests.post(url, json=payload, headers=headers)
+
+# print(response.status_code)
+# print(response.json())
+
+
+url = 'https://genotools-api-776926281950.europe-west4.run.app/run-genotools/'
+
 payload = {
     "pfile": "gs://syed_testing/GP2_merge_AAPDGC",
-    "out": "gs://syed_testing/res/dan_test",
+    "out": "gs://syed_testing/res/dan_cloud_run_test",
     "callrate": 0.5,
     "sex": True,
     "storage_type": "gcs"
 }
+
 API_KEY = os.getenv("API_KEY")
 API_KEY_NAME = os.getenv("API_KEY_NAME")
 
@@ -47,4 +73,4 @@ headers = {
 response = requests.post(url, json=payload, headers=headers)
 
 print(response.status_code)
-print(response.json())
+print(response.text)
