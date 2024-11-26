@@ -1,33 +1,36 @@
-from fastapi import APIRouter, HTTPException, Depends, Security
+from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security.api_key import APIKeyHeader, APIKey
 from typing import List
 import logging
 import os
+from google.cloud import secretmanager
 from dotenv import load_dotenv
 from genotools_api.models.models import GenoToolsParams
 from genotools_api.utils.utils import download_from_gcs, construct_command, execute_genotools, upload_to_gcs
 
 load_dotenv()
 
-logger = logging.getLogger(__name__)
+
 logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
-API_KEY = os.getenv("API_KEY")
-API_KEY_NAME = os.getenv("API_KEY_NAME")
-api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=True)
+def access_secret_version():
+    client = secretmanager.SecretManagerServiceClient()
+    secret_name = f"projects/776926281950/secrets/genotools-api-key/versions/latest"
+    response = client.access_secret_version(name=secret_name)
+    return response.payload.data.decode("UTF-8")
 
-def get_api_key(api_key_header: str = Security(api_key_header)):
-    logger.debug(f"Expected API_KEY_NAME: {API_KEY_NAME}")
-    logger.debug(f"Expected API_KEY: {API_KEY}")
-    logger.debug(f"Received api_key_header: {api_key_header}")
-    if api_key_header == API_KEY:
-        return api_key_header
-    else:
-        logger.debug("Invalid API key received")
+API_KEY = access_secret_version()
+
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+def get_api_key(api_key: str = Depends(api_key_header)):
+    if api_key != API_KEY:
         raise HTTPException(
-            status_code=403,
-            detail="Could not validate credentials",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API Key",
         )
+    return api_key
 
 router = APIRouter()
 
@@ -37,6 +40,7 @@ async def root():
 
 @router.post("/run-genotools/")
 def run_genotools(params: GenoToolsParams, api_key: APIKey = Depends(get_api_key)):
+    
     logger.debug(f"Received payload: {params}")
     logger.debug(f"Using API key: {api_key}")
     try:
@@ -49,7 +53,7 @@ def run_genotools(params: GenoToolsParams, api_key: APIKey = Depends(get_api_key
                 download_from_gcs(gcs_path, local_path)
                 
             params.pfile = f'/app/genotools_api/data/{in_base}'
-
+            
             if params.ref_panel:
                 ref_panel_name = os.path.basename(params.ref_panel)
                 local_ref_panel_path = f'/app/genotools_api/data/{ref_panel_name}'
