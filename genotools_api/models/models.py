@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional, Union
 
 class GenoToolsParams(BaseModel):
@@ -26,3 +26,9 @@ class GenoToolsParams(BaseModel):
     ref_labels: Optional[str] = None
     model: Optional[str] = None
     storage_type: str = 'local'
+    
+    @field_validator('model', 'ref_panel', 'ref_labels')
+    def none_string_to_none(cls, v):
+        if v == 'None':
+            return None
+        return v

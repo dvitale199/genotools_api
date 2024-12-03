@@ -33,11 +33,22 @@ load_dotenv()
 # url = 'https://genotools-api-776926281950.europe-west4.run.app/run-genotools/'
 url = 'http://0.0.0.0:8080/run-genotools/'
 
+# payload = {
+#     "pfile": "gs://syed_testing/GP2_merge_AAPDGC",
+#     "out": "gs://syed_testing/res/dan_KEY",
+#     "callrate": 0.5,
+#     "sex": True,
+#     "storage_type": "gcs"
+# }
+
 payload = {
     "pfile": "gs://syed_testing/GP2_merge_AAPDGC",
-    "out": "gs://syed_testing/res/dan_KEY",
-    "callrate": 0.5,
-    "sex": True,
+    "out": "gs://syed_testing/res/dan_test",
+    "ancestry": True,
+    "ref_panel": "gs://syed_testing/ref/ref_panel/1kg_30x_hgdp_ashk_ref_panel",
+    "ref_labels": "gs://syed_testing/ref/ref_panel/1kg_30x_hgdp_ashk_ref_panel_labels.txt",
+    "all_sample": True,
+    "all_variant": True,
     "storage_type": "gcs"
 }
 
