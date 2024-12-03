@@ -78,6 +78,9 @@ def run_genotools(params: GenoToolsParams, api_key: APIKey = Depends(get_api_key
                 download_from_gcs(params.model, local_model_path)
                 download_from_gcs(common_snps, local_common_snps_path)
                 params.model = local_model_path
+            else:
+                params.model = None
+                print('TEST')
 
             gcs_out_path = params.out
             if gcs_out_path:
