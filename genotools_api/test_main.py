@@ -47,7 +47,7 @@ payload = {
     "ancestry": True,
     "ref_panel": "gs://syed_testing/ref/ref_panel/1kg_30x_hgdp_ashk_ref_panel",
     "ref_labels": "gs://syed_testing/ref/ref_panel/1kg_30x_hgdp_ashk_ref_panel_labels.txt",
-    "model": "gs://syed_testing/ref/models/nba_v1/nba_v1.pkl",
+    "model": "gs://syed_testing/ref/models/python3_11/GP2_merge_release6_NOVEMBER_ready_genotools_qc_umap_linearsvc_ancestry_model.pkl",
     "storage_type": "gcs",
     "full_output": True,
     "skip_fails": True
