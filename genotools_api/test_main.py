@@ -43,13 +43,14 @@ url = 'http://0.0.0.0:8080/run-genotools/'
 
 payload = {
     "pfile": "gs://syed_testing/GP2_merge_AAPDGC",
-    "out": "gs://syed_testing/res/dan_test",
+    "out": "gs://syed_testing/res/mat_test",
     "ancestry": True,
     "ref_panel": "gs://syed_testing/ref/ref_panel/1kg_30x_hgdp_ashk_ref_panel",
     "ref_labels": "gs://syed_testing/ref/ref_panel/1kg_30x_hgdp_ashk_ref_panel_labels.txt",
-    "all_sample": True,
-    "all_variant": True,
-    "storage_type": "gcs"
+    "model": "gs://syed_testing/ref/models/nba_v1/nba_v1.pkl",
+    "storage_type": "gcs",
+    "full_output": True,
+    "skip_fails": True
 }
 
 API_KEY = os.getenv("API_KEY")
