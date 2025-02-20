@@ -60,7 +60,7 @@ API_KEY_NAME=your_api_key_name
 API_KEY=your_api_key_value
 ```
 
-## Configuration
+## Configuration and GKE setup
 
 - **API Key Authentication**
 
