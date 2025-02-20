@@ -24,7 +24,7 @@ This project provides a RESTful API interface to the [GenoTools](https://github.
 ## features
 
 - **run genotools commands**: Execute GenoTools commands remotely via API calls.
-- **data handling with gcs**: Download input files from GCS and upload results back to GCS.
+- **data handling with gcs**: Use your gcs bucket to directly read input and write output via mount.
 - **API Key Authentication**: Secure endpoints using API key authentication.
 - **Flexible Parameters**: Support for various GenoTools parameters and options.
 - **Dockerized Deployment**: Easy deployment using Docker.
@@ -60,7 +60,7 @@ API_KEY_NAME=your_api_key_name
 API_KEY=your_api_key_value
 ```
 
-## Configuration
+## Configuration and GKE setup
 
 - **API Key Authentication**
 
@@ -72,6 +72,84 @@ API_KEY=your_api_key_value
 
   - Ensure the application has access to Google Cloud credentials if interacting with GCS.
   - Set up authentication by configuring the `GOOGLE_APPLICATION_CREDENTIALS` environment variable or using default application credentials.
+- **GKE deployment:** Requires gcloud sdk and minikube (or similar) installed on your system.
+	- Deploy on gke cluster via yaml manifest files and issue API calls to run pipeline.
+- **GKE Setup** 
+	- In order to prepare k8s cluster for genotools work loads, we need to perform following steps via terminal
+	- Create a k8s cluster using gtclusterV1.sh (with comments for each step) file. This file has variious parameters (such as gcp zone, machine type, service account name etc) that can be changed based on needs. Please note that this script has various steps to provision k8s cluster and configure various options and services for it to work properly. Namely:
+		- crate cluster
+		- configure/update cluster with various add-ons
+		- create a gcp bucket (if one does not exist) to use with the cluster
+		- provision GCP Service Account
+		- provision k8s service account and namespace
+		- configure bucket access via GCP service account
+		- deploy k8s ServiceAccount service to impersonate for gcp resource access (like gcp bucket)
+		- bind k8s ServiceAccount service to use gcp resources
+		- **Once k8s cluster is up and running, we can check it with:** gcloud container clusters list
+		- create Persistent Volume (PV):
+			- From Terminal run: kubectl apply -f pv.yaml
+		- Persistent Volume Claim (PVC)
+			- From Terminal run: kubectl apply -f pvc.yaml
+		- __Test PV and PVC:__ 
+			- kubectl get pv 
+			- kubectl get pvc
+	- Create Deployment (pod and related services)
+		- From terminal run:
+			- kubectl apply -f gtcluster-deployment-secret.yaml
+			- This will create following services:
+				- Service: Secret, Name: gt-api-sec, Purpose: API Key
+				- Service: Deployment, Name: gtcluster-pod, Purpose: Creates 1 Pod, 1 Sidecar Container, 1 genotools_api container to run on pod, consume pv via pvc and API Key secret
+				- Service: NodePort Service, Name: gtcluster-svc, Purpose: Provides access to genotoolsapi endpoionts
+				- Service: Ingress, Name: gtcluster-ingress, Purpose: Provide access to pod and hence to genotoolsapi via web url (here IP address) 
+		- In order to test if pod is running and ready to serve worloads, from terminal, use following command: kubectl get all 
+		- Also to get the IP address to use for API calls, Please use following command from terminal: kubectk get ingress
+			- This will provide the IP address for API calls
+	- Making API Calls:
+
+```python
+import requests
+import json
+import pandas as pd
+from requests.exceptions import HTTPError
+
+d = {"email":"syed@datatecnica.com", "storage_type": "local", "pfile": "syed-test/input/GP2_merge_AAPDGC", "out": "syed-test/output/test6", "skip_fails":True, "ref_panel":"ref/ref_panel/1kg_30x_hgdp_ashk_ref_panel","ref_labels":"ref/ref_panel/1kg_30x_hgdp_ashk_ref_panel_labels.txt","model":"ref/models/python3_11/GP2_merge_release6_NOVEMBER_ready_genotools_qc_umap_linearsvc_ancestry_model.pkl", "callrate":.01}
+
+headers = {
+    "X-API-KEY": "YOUR_API-KEY",
+    "Content-Type": "application/json"
+}
+
+link="http://34.36.122.207/run-genotools/" 
+try:
+    
+    r = requests.post(f"{link}", data=json.dumps(d), headers=headers)
+
+    print(f'r: {r}')
+    r.raise_for_status()
+    res=r.json()
+    print(f"res: {res}")
+except HTTPError as http_err:
+    print(f'HTTP error occurred: {http_err}')
+except Exception as err:
+    print(f'Other error occurred: {err}')            
+```
+
+-	Once pipeline is submitted, an automated job submission confirmation email will be sent at the email address provided in the API call.
+- At job completion, a confirmation email will be sent to the submitter.
+
+## Destroying k8s
+
+Please use following steps to destroy the cluster.
+
+- gcloud container clusters delete $CLUSTER_NAME --zone $ZONE
+- This will delete the k8s cluster and all related resources.
+- You can also check if cluster is still running or not by using following command: kubectl get all
+
+
+## Coming Soon
+
+We are also working on an automated single step k8s cluster deployment workflow and will share once it is done. 
+
 
 ## Usage
 

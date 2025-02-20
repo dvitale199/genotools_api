@@ -2,6 +2,7 @@ from pydantic import BaseModel, field_validator
 from typing import Optional, Union
 
 class GenoToolsParams(BaseModel):
+    email: Optional[str] = None
     bfile: Optional[str] = None
     pfile: Optional[str] = None
     vcf: Optional[str] = None
