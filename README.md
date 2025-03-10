@@ -74,7 +74,15 @@ API_KEY=your_api_key_value
   - Set up authentication by configuring the `GOOGLE_APPLICATION_CREDENTIALS` environment variable or using default application credentials.
 - **GKE deployment:** Requires gcloud sdk and minikube (or similar) installed on your system.
 	- Deploy on gke cluster via yaml manifest files and issue API calls to run pipeline.
-- **GKE Setup** 
+	- **TL;DR**: From terminal, issue following commands to authenticate to your gcloud account: 
+		- gcloud init
+			- Select your gcp account to use
+		- gcloud auth login
+			- To authenticate to gcp account
+		- To Provision k8s cluster, run following command from terminal, Please make sure that you have all required bash and yaml files with all variables set to proper values (See next section for details) :
+			- bash gtclusterV2.sh    
+			- kubectl apply -f gtcluster-deployment-secretV1.yml
+- **GKE Setup Configurations** 
 	- In order to prepare k8s cluster for genotools work loads, we need to perform following steps via terminal
 	- Create a k8s cluster using gtclusterV1.sh (with comments for each step) file. This file has variious parameters (such as gcp zone, machine type, service account name etc) that can be changed based on needs. Please note that this script has various steps to provision k8s cluster and configure various options and services for it to work properly. Namely:
 		- crate cluster
@@ -119,7 +127,7 @@ headers = {
     "Content-Type": "application/json"
 }
 
-link="http://34.36.122.207/run-genotools/" 
+link="<IP Address From Ingress>/run-genotools/" 
 try:
     
     r = requests.post(f"{link}", data=json.dumps(d), headers=headers)

@@ -8,7 +8,8 @@ export GCP_SA_NAME=gtcluster-eu-west4
 export K8S_NAMESPACE=gke-ns-gtcluster-eu-west4
 export K8S_SA_NAME=gke-sa-gtcluster-eu-west4
 
-#create k8s cluster ($CLUSTER_NAME) with e2-standard-4 machine-type in zone ($ZONE) with one (worker) node in gcp projetc ($GCP_PROJECT). Also enable GcsFuseCsiDriver for gcp bucket access and secret manager for API key (currently not used)  
+
+#create k8s cluster ($CLUSTER_NAME) with c4-standard-16 machine-type in zone ($ZONE) with one (worker) node in gcp projetc ($GCP_PROJECT). Also enable GcsFuseCsiDriver for gcp bucket access and secret manager for API key (currently not used)  
 gcloud container clusters create $CLUSTER_NAME \
   --enable-secret-manager \
   --addons GcsFuseCsiDriver \
@@ -100,3 +101,6 @@ spec:
   volumeName: gtserver-pv
   storageClassName: gtserver-pv
 EOF
+
+#if pv or pvc can not be deleted
+# kubectl patch pv sample-app-pv -p '{"metadata":{"finalizers":null}}' -n namespace1
