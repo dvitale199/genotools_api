@@ -72,7 +72,7 @@ API_KEY=your_api_key_value
 
   - Ensure the application has access to Google Cloud credentials if interacting with GCS.
   - Set up authentication by configuring the `GOOGLE_APPLICATION_CREDENTIALS` environment variable or using default application credentials.
-- **GKE deployment:** Requires gcloud sdk and minikube (or similar) installed on your system.
+- **GKE deployment:** Requires gcloud sdk and kubectl installed on your system. 
 	- Deploy on gke cluster via yaml manifest files and issue API calls to run pipeline.
 	- **TL;DR**: From terminal, issue following commands to authenticate to your gcloud account: 
 		- gcloud init
@@ -80,7 +80,7 @@ API_KEY=your_api_key_value
 		- gcloud auth login
 			- To authenticate to gcp account
 		- To Provision k8s cluster, run following command from terminal, Please make sure that you have all required bash and yaml files with all variables set to proper values (See next section for details) :
-			- bash gtclusterV2.sh    
+			- bash gtclusterV3.sh    
 			- kubectl apply -f gtcluster-deployment-secretV1.yml
 - **GKE Setup Configurations** 
 	- In order to prepare k8s cluster for genotools work loads, we need to perform following steps via terminal

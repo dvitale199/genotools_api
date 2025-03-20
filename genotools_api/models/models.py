@@ -19,6 +19,7 @@ class GenoToolsParams(BaseModel):
     prune_related: Optional[bool] = None
     prune_duplicated: Optional[bool] = None
     het: Optional[bool] = None
+    amr_het: Optional[bool] = None
     all_sample: Optional[bool] = None
     all_variant: Optional[bool] = None
     maf: Optional[float] = None

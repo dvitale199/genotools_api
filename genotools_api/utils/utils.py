@@ -60,7 +60,8 @@ def construct_command(params: GenoToolsParams) -> str:
         ("--het", params.het),
         ("--all_sample", params.all_sample),
         ("--all_variant", params.all_variant),
-        ("--ancestry", params.ancestry)
+        ("--ancestry", params.ancestry),
+        ("--amr_het", params.amr_het)
     ]
 
     for option, value in options_with_values.items():

@@ -7,9 +7,10 @@ export BUCKET_NAME=gtserver-eu-west4-gp2-release-terra
 export GCP_SA_NAME=gtcluster-eu-west4
 export K8S_NAMESPACE=gke-ns-gtcluster-eu-west4
 export K8S_SA_NAME=gke-sa-gtcluster-eu-west4
+export ANCESSTORY_NODE_POOL=ancesstory-pool
 
 
-#create k8s cluster ($CLUSTER_NAME) with c4-standard-16 machine-type in zone ($ZONE) with one (worker) node in gcp projetc ($GCP_PROJECT). Also enable GcsFuseCsiDriver for gcp bucket access and secret manager for API key (currently not used)  
+#create k8s cluster ($CLUSTER_NAME) with e2-standard-4 (and cluster pool with c4-highmem-32 -> 32 vCPU, 248 GB Memory) machine-type in zone ($ZONE) with one (worker) node in gcp projetc ($GCP_PROJECT). Also enable GcsFuseCsiDriver for gcp bucket access and secret manager for API key (currently not used)  
 gcloud container clusters create $CLUSTER_NAME \
   --enable-secret-manager \
   --addons GcsFuseCsiDriver \
@@ -23,6 +24,13 @@ gcloud container clusters create $CLUSTER_NAME \
 gcloud container clusters get-credentials $CLUSTER_NAME --zone $ZONE
 #enable HttpLoadBalancing add-on for ingress
 gcloud container clusters update $CLUSTER_NAME --update-addons=HttpLoadBalancing=ENABLED --zone $ZONE
+#add node-pool to use with the ancesstory deployment
+gcloud container node-pools create $ANCESSTORY_NODE_POOL \
+  --cluster=$CLUSTER_NAME \
+  --machine-type=c4-highmem-32 \
+  --zone=$ZONE \
+  --disk-size=200 \
+  --num-nodes=1
 #create a service account to use with the k8s cluster
 gcloud iam service-accounts create $GCP_SA_NAME --project=$GCP_PROJECT
 #create k8s namespace to better manage cluster resources in case we have multiple clusters
