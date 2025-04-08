@@ -1,5 +1,7 @@
 # GenoTools API
 
+# This project is no longer being maintained under this repo. an updated version can be found here: https://github.com/datatecnica/genotools-server
+
 This project provides a RESTful API interface to the [GenoTools](https://github.com/dvitale199/GenoTools) package, allowing users to perform genomic data quality control and analysis through HTTP requests. The API handles data transfer from Google Cloud Storage (GCS), executes GenoTools commands, and returns the results, facilitating integration with other services and automation of genomic workflows.
 
 ## Table of Contents
@@ -47,18 +49,16 @@ This project provides a RESTful API interface to the [GenoTools](https://github.
    ```
 
 2. **Install Dependencies**
-Ensure you have Poetry installed.
-
-```
-poetry install
-```
+    ```
+    pip install -r requirements.txt
+    ```
 
 3. **set up environment**
 create .env file in the project root direcotry and define the variables
-```
-API_KEY_NAME=your_api_key_name
-API_KEY=your_api_key_value
-```
+    ```
+    API_KEY_NAME=your_api_key_name
+    API_KEY=your_api_key_value
+    ```
 
 ## Configuration and GKE setup
 
